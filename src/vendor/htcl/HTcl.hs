@@ -192,8 +192,8 @@ type PTclObjArray = Ptr PTclObj
 
 
 -- Foreign import functions --     Objects
-foreign import ccall "Tcl_NewIntObj"
- tcl_NewIntObj :: CInt -> IO (PTclObj)
+tcl_NewIntObj :: CInt -> IO (PTclObj)
+tcl_NewIntObj v = tcl_NewWideIntObj (castI v)
 
 foreign import ccall "Tcl_NewWideIntObj"
  tcl_NewWideIntObj :: CLLong -> IO (PTclObj) -- tcl uses long long
@@ -782,8 +782,8 @@ htclRegCommands interp cmds = do
 foreign import ccall "Tcl_SetObjResult"
   tcl_SetObjResult :: TclInterp -> PTclObj -> IO ()
 
-foreign import ccall "Tcl_AddObjErrorInfo"
- tcl_AddObjErrorInfo :: TclInterp -> Ptr CChar -> CInt -> IO ()
+foreign import ccall "Tcl_AppendObjToErrorInfo"
+ tcl_AppendObjToErrorInfo :: TclInterp -> PTclObj -> IO ()
 
 -- Adds String to the global tcl variable errorInfo
 htcl_AddObjErrorInfo :: TclInterp -> String -> IO TclStatus
@@ -793,7 +793,8 @@ htcl_AddObjErrorInfo interp s = do
               "\n"     -> ""
               ('\n':r) -> r
               x        -> x
-  withCStringLen str (\(pc,len) -> tcl_AddObjErrorInfo interp pc (castI len))
+  strObj <- withCStringLen str (\(pc,len) -> tcl_NewStringObj pc (castI len))
+  _ <- tcl_AppendObjToErrorInfo interp strObj
   return htcl_Error
 
 -- Not used
